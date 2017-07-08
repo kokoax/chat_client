@@ -2,7 +2,6 @@ defmodule ClientReceiver do
   @moduledoc """
   サーバからメッセージを受信するプロセス全体のモジュール
   """
-  require Logger
 
   @doc """
   サーバ側から送られてくるデータの最後には改行を付ける

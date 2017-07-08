@@ -13,7 +13,6 @@ defmodule ChatClient do
   - ``$ ./chat_client --domain "localhost" --port 1600 --username Yoshitomo``
   - ``$ ./chat_client -d "127.0.0.1" -p 65535 -u yoshitune``
   """
-  require Logger
   require ClientSender
   require ClientReceiver
 
@@ -71,6 +70,12 @@ defmodule ChatClient do
     case options |> Enum.into(%{}) do
       %{domain: domain, port: port, username: username} ->
         [username, port, domain]
+      %{port: port, username: username} ->
+        [username, port, @def_domain]
+      %{domain: domain, username: username} ->
+        [username, @def_port, domain]
+      %{username: username} ->
+        [username, @def_port, @def_domain]
       _ ->
         nil
     end
