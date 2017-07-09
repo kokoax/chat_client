@@ -31,9 +31,14 @@ defmodule ChatClient do
   @doc """
   サーバと接続したら、サーバからの受信とサーバへの送信のプロセスを並列化して実行
   """
-  def main_process(sock, username) do
+  def main_process(sock, username, channel) do
     # コネクションを繋いだら、usernameを送信し、サーバ側に登録する
-    :gen_tcp.send(sock, username)
+    data = if channel == nil do
+      ~s(%{username: "#{username}", channel: nil})
+    else
+      ~s(%{username: "#{username}", channel: "#{channel}"})
+    end
+    :gen_tcp.send(sock, data)
     # サーバから送られてくるメッセージを取得表示する部分を並列化
     task = Task.async(fn -> ClientReceiver.chat_recv(sock) end)
     # sockがこのプロセス(loop)に所有権があると、sockをcloseした時、
@@ -57,11 +62,11 @@ defmodule ChatClient do
   @doc """
   サーバとのコネクトを行い、メインのプロセスを実行する
   """
-  def do_process([username, port, domain]) do
+  def do_process([username, channel, port, domain]) do
     # '#{domain}'はドメインは文字配列で渡さないとエラーになるので
     # ''内に文字列を展開している
     sock = connect('#{domain}', port)
-    main_process(sock, username)
+    main_process(sock, username, channel)
   end
 
   @doc """
@@ -69,19 +74,19 @@ defmodule ChatClient do
   """
   def parse_args(argv) do
     {options,_,_} = argv |> OptionParser.parse(
-      switches: [username: :string, port: :integer, domain: :string],
-      aliases:  [u: :username, p: :port, d: :domain],
+      switches: [username: :string, channel: :string, port: :integer, domain: :string],
+      aliases:  [u: :username, c: :channel, p: :port, d: :domain],
     )
     # keyword listだと順番が保持され、面倒なのでMapでpattern match
     case options |> Enum.into(%{}) do
-      %{domain: domain, port: port, username: username} ->
-        [username, port, domain]
+      %{domain: domain, port: port, username: username, channel: channel} ->
+        [username, options[:channel], port, domain]
       %{port: port, username: username} ->
-        [username, port, @def_domain]
+        [username, options[:channel], port, @def_domain]
       %{domain: domain, username: username} ->
-        [username, @def_port, domain]
+        [username, options[:channel], @def_port, domain]
       %{username: username} ->
-        [username, @def_port, @def_domain]
+        [username, options[:channel], @def_port, @def_domain]
       _ ->
         nil
     end
