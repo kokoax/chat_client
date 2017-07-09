@@ -49,7 +49,6 @@ defmodule ChatClient do
     # 一定時間入力がないと確認する
     # Task.async(fn -> chat_in(sock, username) end)
     ClientSender.chat_send(sock, username)
-    # TODO: TimeOut
   end
 
   @doc """
