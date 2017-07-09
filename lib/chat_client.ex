@@ -16,6 +16,9 @@ defmodule ChatClient do
   require ClientSender
   require ClientReceiver
 
+  @def_domain "localhost"
+  @def_port   2000
+
   @doc """
   指定したdomainにportでconnectionを開き、socketを返す
   """

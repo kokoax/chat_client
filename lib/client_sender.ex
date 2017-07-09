@@ -38,7 +38,7 @@ defmodule ClientSender do
     catch
       # タイムアウトすると :exit,TaskInfoが返ってくるのでパターンマッチ
       :exit,_ ->
-        case IO.gets "\rAre you exit? (y or other) " do
+        case IO.gets "\rDo you want to exit? (y or other) " do
           "y\n" ->
             ":exit\n"
           _ ->
@@ -48,6 +48,10 @@ defmodule ClientSender do
 
     cond do
       ":nop\n" == body -> # 何もしない
+        chat_send(sock, username)
+      ":help\n" == body -> # helpを表示
+        data = "%{event: \"help\"}"
+        :gen_tcp.send(sock, data)
         chat_send(sock, username)
       ":exit\n" == body -> # クライアントを終了する
         data = "%{event: \"exit\", username: \"#{username}\"}"
@@ -64,23 +68,23 @@ defmodule ClientSender do
         data = "%{event: \"user_list_pid\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
-      Regex.match?(~r/^:user_list.+/, body) -> # 指定したチャンネルのユーザリストを表示
+      Regex.match?(~r/^:user_list\s+.+/, body) -> # 指定したチャンネルのユーザリストを表示
         data = "%{event: \"user_list_channel\", channel: \"#{Regex.run(~r/:user_list\s+(.+)\n/, body) |> Enum.at(1)}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
-      Regex.match?(~r/^:move.+/, body) ->  # チャンネルを指定したところへ移動
+      Regex.match?(~r/^:move\s+.+/, body) ->  # チャンネルを指定したところへ移動
         data = "%{event: \"move\", username: \"#{username}\", channel: \"#{Regex.run(~r/:move\s+(.+)\n/, body) |> Enum.at(1)}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
-      Regex.match?(~r/^:create.+/, body) ->  # チャンネルを新しく作成して作成したユーザをそのチャンネルへ移動
+      Regex.match?(~r/^:create\s+.+/, body) ->  # チャンネルを新しく作成して作成したユーザをそのチャンネルへ移動
         data = "%{event: \"create\", username: \"#{username}\", channel: \"#{Regex.run(~r/:create\s+(.+)\n/, body) |> Enum.at(1)}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
-      Regex.match?(~r/^:delete.+/, body) ->  # チャンネルを指定したところへ移動
+      Regex.match?(~r/^:delete\s+.+/, body) ->  # チャンネルを指定したところへ移動
         data = "%{event: \"delete\", channel: \"#{Regex.run(~r/:delete\s+(.+)\n/, body) |> Enum.at(1)}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
-      Regex.match?(~r/^:whisper.+/, body) -> # 指定した(ユーザ名)ユーザにメッセージを送信(format: /whisper\s+#{username}\s+#{body})
+      Regex.match?(~r/^:whisper\s+.+?\s+.+/, body) -> # 指定した(ユーザ名)ユーザにメッセージを送信(format: /whisper\s+#{username}\s+#{body})
         info = Regex.run(~r/:whisper\s+(.+?)\s+(.+)/, body)
         opponent = info |> Enum.at(1)
         body = info |> Enum.at(2)
