@@ -4,14 +4,19 @@ defmodule ChatClient do
   ## Arguments
   - ``--domain, -d``
     - サーバの起動しているドメインを指定
+    - 初期値は "localhost"
   - ``--port, -p``
     - サーバの利用しているポート番号を指定
+    - 初期値は 2000
   - ``--username -u``
     - チャットで利用するユーザ名を指定
+  - ``--channel, -c``
+    - 初期所属チャンネルを指定
+    - 初期値は"general"
   ## Usage
-  - すべての引数が無いと動きません
-  - ``$ ./chat_client --domain "localhost" --port 1600 --username Yoshitomo``
-  - ``$ ./chat_client -d "127.0.0.1" -p 65535 -u yoshitune``
+  - usernameのみ必須です。
+  - ``$ ./chat_client --domain "localhost" --port 1600 --username "Yoshitomo" --channel "new_channel"``
+  - ``$ ./chat_client -d "127.0.0.1" -p 65535 -u "yoshitune" -c "new_channel"``
   """
   require ClientSender
   require ClientReceiver
