@@ -52,54 +52,64 @@ defmodule ClientSender do
       # 何もしない
       ":nop\n" == body -> # 何もしない
         chat_send(sock, username)
+
       # helpを表示
       ":help\n" == body ->
         data = "%{event: \"help\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
       # クライアントを終了する
       ":exit\n" == body ->
         data = "%{event: \"exit\", username: \"#{username}\"}"
         :gen_tcp.send(sock, data)
+
       # サーバが保持しているチャンネルのリストを表示
       ":channel_list\n"  == body ->
         data = "%{event: \"channel_list\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
       # 現在クライアントが参加しているチャンネルを表示
       ":now_channel\n"  == body ->
         data = "%{event: \"now_channel\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
       # 現在クライアントが所属しているチャンネルのユーザリストを表示
       ":user_list\n" == body ->
         data = "%{event: \"user_list_pid\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
       # 指定したチャンネルのユーザリストを表示
       Regex.match?(~r/^:user_list\s+.+/, body) ->
         channel = Regex.run(~r/:user_list\s+(.+)\n/, body) |> Enum.at(1)
         data = "%{event: \"user_list_channel\", channel: \"#{channel}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
         # チャンネルを指定したところへ移動
       Regex.match?(~r/^:move\s+.+/, body) ->
         channel = Regex.run(~r/:move\s+(.+)\n/, body) |> Enum.at(1)
         data = "%{event: \"move\", username: \"#{username}\", channel: \"#{channel}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
         # チャンネルを新しく作成して作成したユーザをそのチャンネルへ移動
       Regex.match?(~r/^:create\s+.+/, body) ->
         channel = Regex.run(~r/:create\s+(.+)\n/, body) |> Enum.at(1)
         data = "%{event: \"create\", username: \"#{username}\", channel: \"#{channel}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
         # チャンネルを指定したところへ移動
       Regex.match?(~r/^:delete\s+.+/, body) ->
         channel = Regex.run(~r/:delete\s+(.+)\n/, body) |> Enum.at(1)
         data = "%{event: \"delete\", channel: \"#{channel}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
         # 指定した(ユーザ名)ユーザにメッセージを送信(format: /whisper\s+#{username}\s+#{body})
       Regex.match?(~r/^:whisper\s+.+?\s+.+/, body) ->
         info = Regex.run(~r/:whisper\s+(.+?)\s+(.+)/, body)

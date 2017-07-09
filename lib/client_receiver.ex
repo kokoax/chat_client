@@ -13,13 +13,40 @@ defmodule ClientReceiver do
   end
 
   @doc """
-  サーバ側からデータが送信されてきたら問答無用で出力する
+  クライアントからのメッセージは、elixirのMapというデータ構造を文字列にしたもの
+  を送信するので、受信したらそのままevalすることで、データを取り出すことができる
+  """
+  def eval(str) do
+    {data, _} = Code.eval_string(str)
+    data
+  end
+
+  @doc """
+  サーバ側からデータが送信されてきたら、eventを解析して
+  処理を振り分けている。
   \\rで> をごまかしている
   """
   def chat_recv(sock) do
-    {:ok, body} = :gen_tcp.recv(sock, 0)
-    # username with body and remove last elem from message
-    IO.puts "\r#{body |> remove_last}"
-    chat_recv(sock)
+    data = try do
+      {:ok, data} = :gen_tcp.recv(sock, 0)
+      data |> eval
+    rescue
+      # 想定外のdataが投げられてくるときがあるので、rescueしてコネクションをclose
+      e in MatchError ->
+        IO.warn "MatchError: Maybe unxpected connection break."
+        %{event: "error", message: "data is exeption.\n"}
+    end
+
+    case data.event do
+      "message" ->
+        IO.puts "\r#{data.message |> remove_last}"
+        chat_recv(sock)
+
+      "error" ->
+        IO.puts "\r#{data.message |> remove_last}"
+
+      "exit" ->
+        IO.puts "\r#{data.message |> remove_last}"
+    end
   end
 end

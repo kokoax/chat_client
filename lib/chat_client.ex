@@ -32,28 +32,36 @@ defmodule ChatClient do
     sock
   end
 
+  @doc """
+  コネクションを開いたときにサーバ側にユーザ情報を登録するので
+  その情報を文字列で生成する。
+  """
+  def first_send(username, channel) do
+    if channel == nil do
+      ~s(%{username: "#{username}", channel: nil})
+    else
+      ~s(%{username: "#{username}", channel: "#{channel}"})
+    end
+  end
 
   @doc """
   サーバと接続したら、サーバからの受信とサーバへの送信のプロセスを並列化して実行
   """
   def main_process(sock, username, channel) do
     # コネクションを繋いだら、usernameを送信し、サーバ側に登録する
-    data = if channel == nil do
-      ~s(%{username: "#{username}", channel: nil})
-    else
-      ~s(%{username: "#{username}", channel: "#{channel}"})
-    end
+    data = first_send(username, channel)
     :gen_tcp.send(sock, data)
     # サーバから送られてくるメッセージを取得表示する部分を並列化
-    task = Task.async(fn -> ClientReceiver.chat_recv(sock) end)
+    recv_task = Task.async(fn -> ClientReceiver.chat_recv(sock) end)
     # sockがこのプロセス(loop)に所有権があると、sockをcloseした時、
     # chat_in側も落ちてしまうのでchat_recvのプロセスに所有権を、
     # 移動しておいて、sockがcloseしても、とりあえず、エラーにならないようにしている
-    :ok = :gen_tcp.controlling_process(sock, task.pid)
+    :ok = :gen_tcp.controlling_process(sock, recv_task.pid)
 
     # 一定時間入力がないと確認する
-    # Task.async(fn -> chat_in(sock, username) end)
-    ClientSender.chat_send(sock, username)
+    send_task = Task.async(fn -> ClientSender.chat_send(sock, username) end)
+    recv_task |> Task.await(:infinity)  # サーバからexitを返されるまでwait
+    Process.exit(send_task.pid, :kill)
   end
 
   @doc """
@@ -83,7 +91,7 @@ defmodule ChatClient do
     )
     # keyword listだと順番が保持され、面倒なのでMapでpattern match
     case options |> Enum.into(%{}) do
-      %{domain: domain, port: port, username: username, channel: channel} ->
+      %{domain: domain, port: port, username: username} ->
         [username, options[:channel], port, domain]
       %{port: port, username: username} ->
         [username, options[:channel], port, @def_domain]
