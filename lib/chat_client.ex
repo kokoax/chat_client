@@ -32,9 +32,12 @@ defmodule ChatClient do
   サーバと接続したら、サーバからの受信とサーバへの送信のプロセスを並列化して実行
   """
   def main_process(sock, username) do
-    :gen_tcp.send(sock, username)  # コネクションを繋いだら、usernameを送信し、サーバ側に登録する
-    task = Task.async(fn -> ClientReceiver.chat_recv(sock) end)  # サーバから送られてくるメッセージを取得表示する部分を並列化
-    # sockがこのプロセス(loop)に所有権があると、sockをcloseした時、chat_in側も落ちてしまうので、chat_recvのプロセスに所有権を
+    # コネクションを繋いだら、usernameを送信し、サーバ側に登録する
+    :gen_tcp.send(sock, username)
+    # サーバから送られてくるメッセージを取得表示する部分を並列化
+    task = Task.async(fn -> ClientReceiver.chat_recv(sock) end)
+    # sockがこのプロセス(loop)に所有権があると、sockをcloseした時、
+    # chat_in側も落ちてしまうのでchat_recvのプロセスに所有権を、
     # 移動しておいて、sockがcloseしても、とりあえず、エラーにならないようにしている
     :ok = :gen_tcp.controlling_process(sock, task.pid)
 
