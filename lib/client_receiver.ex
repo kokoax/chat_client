@@ -29,6 +29,7 @@ defmodule ClientReceiver do
   def chat_recv(sock) do
     data = try do
       {:ok, data} = :gen_tcp.recv(sock, 0)
+      data |> IO.inspect
       data |> eval
     rescue
       # 想定外のdataが投げられてくるときがあるので、rescueしてコネクションをclose

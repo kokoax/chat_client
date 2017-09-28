@@ -118,6 +118,7 @@ defmodule ClientSender do
         data = "%{event: \"whisper\", username: \"#{username}\", opponent: \"#{opponent}\", body: \"#{"#{body}\n"}\"}"
         :gen_tcp.send(sock, data)
         chat_send(sock, username)
+
         # 指定のコマンドが無い場合、チャットに発言する
       true ->
         data = "%{event: \"say\", username: \"#{username}\", body: \"#{body}\"}"
